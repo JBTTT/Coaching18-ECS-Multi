@@ -1,4 +1,4 @@
-name: Build & Deploy S3 Service
+name: Build & Deploy SQS Service
 on:
   push:
     paths:
