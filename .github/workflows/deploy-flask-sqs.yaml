@@ -2,11 +2,11 @@ name: Build & Deploy S3 Service
 on:
   push:
     paths:
-      - 'service-sqs/**'
-      - '.github/workflows/build-and-deploy-sqs.yaml'
+      - 'flask-sqs-service/**'
+      - '.github/workflows/deploy-flask-sqs.yaml'
     branches: [ main ]
   pull_request:
-    paths: [ 'service-sqs/**' ]
+    paths: [ 'flask-sqs-service/**' ]
 
 jobs:
   build-deploy:

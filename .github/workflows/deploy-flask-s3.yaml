@@ -4,12 +4,12 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'service-s3/**'
-      - '.github/workflows/build-and-deploy-s3.yaml'
+      - 'flask-s3-service/**'
+      - '.github/workflows/deploy-flask-s3.yaml'
       
   pull_request:
     paths:
-      - 'service-s3/**'
+      - 'flask-s3-service/**'
 
 jobs:
   build-deploy:
