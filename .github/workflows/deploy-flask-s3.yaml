@@ -26,7 +26,7 @@ jobs:
 
       - name: Build, tag, push
         env:
-          ECR_REPO: ${{ vars.ECR_REPO_S3 }}
+          ECR_REPO: ${{ vars.ECR_SVC1 }}
         run: |
           IMAGE="${ECR_REPO}:$(git rev-parse --short HEAD)"
           docker build -t "$IMAGE" service-s3
@@ -39,7 +39,7 @@ jobs:
         id: taskdef
         run: |
           FAMILY="${{ vars.PROJECT_NAME }}-s3"
-          IMAGE="${{ vars.ECR_REPO_S3 }}:$(git rev-parse --short HEAD)"
+          IMAGE="${{ vars.ECR_SVC1 }}:$(git rev-parse --short HEAD)"
           # pull current task def JSON, replace image, register new revision
           aws ecs describe-task-definition --task-definition "$FAMILY" \
             --query 'taskDefinition' > td.json
