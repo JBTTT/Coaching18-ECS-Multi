@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - 'service-s3/**'
-      - '.github/workflows/build-and-deploy-s3.yml'
+      - '.github/workflows/build-and-deploy-s3.yaml'
     branches: [ main ]
   pull_request:
     paths: [ 'service-s3/**' ]
@@ -18,15 +18,15 @@ jobs:
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
-          aws-region: ${{ vars.AWS_REGION }}
+#  role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, push
         env:
-          ECR_REPO: ${{ vars.ECR_SVC1 }}
+          ECR_REPO: ${{ secrets.ECR_SVC1 }}
         run: |
           IMAGE="${ECR_REPO}:$(git rev-parse --short HEAD)"
           docker build -t "$IMAGE" service-s3
@@ -38,8 +38,8 @@ jobs:
       - name: Register new task def (swap image)
         id: taskdef
         run: |
-          FAMILY="${{ vars.PROJECT_NAME }}-s3"
-          IMAGE="${{ vars.ECR_SVC1 }}:$(git rev-parse --short HEAD)"
+          FAMILY="${{ secrets.PROJECT_NAME }}-s3"
+          IMAGE="${{ secrets.ECR_SVC1 }}:$(git rev-parse --short HEAD)"
           # pull current task def JSON, replace image, register new revision
           aws ecs describe-task-definition --task-definition "$FAMILY" \
             --query 'taskDefinition' > td.json
@@ -53,6 +53,6 @@ jobs:
       - name: Update service
         run: |
           aws ecs update-service \
-            --cluster "${{ vars.PROJECT_NAME }}-cluster" \
-            --service "${{ vars.PROJECT_NAME }}-s3-svc" \
+            --cluster "${{ secrets.PROJECT_NAME }}-cluster" \
+            --service "${{ secrets.PROJECT_NAME }}-s3-svc" \
             --task-definition "${{ steps.taskdef.outputs.TD_ARN }}"

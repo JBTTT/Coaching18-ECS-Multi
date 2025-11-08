@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - 'service-sqs/**'
-      - '.github/workflows/build-and-deploy-sqs.yml'
+      - '.github/workflows/build-and-deploy-sqs.yaml'
     branches: [ main ]
   pull_request:
     paths: [ 'service-sqs/**' ]
@@ -18,8 +18,8 @@ jobs:
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
-          aws-region: ${{ vars.AWS_REGION }}
+#role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
