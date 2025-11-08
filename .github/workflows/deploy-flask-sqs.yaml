@@ -9,7 +9,7 @@ on:
     paths: [ 'flask-sqs-service/**' ]
 
 jobs:
-  build-deploy:
+  build-deploy2:
     runs-on: ubuntu-latest
     permissions: { id-token: write, contents: read }
     steps:

@@ -12,7 +12,7 @@ on:
       - 'flask-s3-service/**'
 
 jobs:
-  build-deploy:
+  build-deploy1:
     runs-on: ubuntu-latest
     permissions:
       contents: read
