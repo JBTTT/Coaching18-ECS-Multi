@@ -1,0 +1,58 @@
+name: Build & Deploy S3 Service
+on:
+  push:
+    paths:
+      - 'service-s3/**'
+      - '.github/workflows/build-and-deploy-s3.yml'
+    branches: [ main ]
+  pull_request:
+    paths: [ 'service-s3/**' ]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions: { id-token: write, contents: read }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, push
+        env:
+          ECR_REPO: ${{ vars.ECR_REPO_S3 }}
+        run: |
+          IMAGE="${ECR_REPO}:$(git rev-parse --short HEAD)"
+          docker build -t "$IMAGE" service-s3
+          docker push "$IMAGE"
+          # also tag latest (optional)
+          docker tag "$IMAGE" "${ECR_REPO}:latest"
+          docker push "${ECR_REPO}:latest"
+
+      - name: Register new task def (swap image)
+        id: taskdef
+        run: |
+          FAMILY="${{ vars.PROJECT_NAME }}-s3"
+          IMAGE="${{ vars.ECR_REPO_S3 }}:$(git rev-parse --short HEAD)"
+          # pull current task def JSON, replace image, register new revision
+          aws ecs describe-task-definition --task-definition "$FAMILY" \
+            --query 'taskDefinition' > td.json
+          cat td.json | \
+            jq '.containerDefinitions[0].image = "'$IMAGE'" | del(.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy,.taskDefinitionArn)' \
+            > new-td.json
+          aws ecs register-task-definition --cli-input-json file://new-td.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text > td_arn.txt
+          echo "TD_ARN=$(cat td_arn.txt)" >> $GITHUB_OUTPUT
+
+      - name: Update service
+        run: |
+          aws ecs update-service \
+            --cluster "${{ vars.PROJECT_NAME }}-cluster" \
+            --service "${{ vars.PROJECT_NAME }}-s3-svc" \
+            --task-definition "${{ steps.taskdef.outputs.TD_ARN }}"
