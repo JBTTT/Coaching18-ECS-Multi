@@ -57,3 +57,4 @@ jobs:
             --cluster "${{ secrets.PROJECT_NAME }}-cluster" \
             --service "${{ secrets.PROJECT_NAME }}-sqs-svc" \
             --task-definition "${{ steps.taskdef.outputs.TD_ARN }}"
+            
