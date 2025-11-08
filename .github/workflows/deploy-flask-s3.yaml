@@ -8,8 +8,10 @@ on:
       - '.github/workflows/deploy-flask-s3.yaml'
       
   pull_request:
+    branches: [ main ]
     paths:
       - 'flask-s3-service/**'
+      - '.github/workflows/deploy-flask-s3.yaml'
 
 jobs:
   build-deploy1:
