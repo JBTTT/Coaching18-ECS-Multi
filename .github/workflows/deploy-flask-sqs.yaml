@@ -1,12 +1,12 @@
-name: Build & Deploy S3 Service
+name: Build & Deploy SQS Service
 on:
   push:
     paths:
-      - 'service-sqs/**'
-      - '.github/workflows/build-and-deploy-sqs.yml'
+      - 'flask-sqs-service/**'
+      - '.github/workflows/deploy-flask-sqs.yaml'
     branches: [ main ]
   pull_request:
-    paths: [ 'service-sqs/**' ]
+    paths: [ 'flask-sqs-service/**' ]
 
 jobs:
   build-deploy:
@@ -18,18 +18,21 @@ jobs:
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
-          aws-region: ${{ vars.AWS_REGION }}
+#role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, push
         env:
-          ECR_REPO: ${{ vars.ecr_svc2 }}
+          ECR_REPO: ${{ secrets.ecr_svc2 }}
+
         run: |
           IMAGE="${ECR_REPO}:$(git rev-parse --short HEAD)"
-          docker build -t "$IMAGE" service-s3
+          docker build -t "$IMAGE" flask-sqs-service
           docker push "$IMAGE"
           # also tag latest (optional)
           docker tag "$IMAGE" "${ECR_REPO}:latest"
@@ -38,8 +41,8 @@ jobs:
       - name: Register new task def (swap image)
         id: taskdef
         run: |
-          FAMILY="${{ vars.PROJECT_NAME }}-s3"
-          IMAGE="${{ vars.ecr_svc2 }}:$(git rev-parse --short HEAD)"
+          FAMILY="group1-app-svc2"
+          IMAGE="${{ secrets.ecr_svc2 }}:$(git rev-parse --short HEAD)"
           # pull current task def JSON, replace image, register new revision
           aws ecs describe-task-definition --task-definition "$FAMILY" \
             --query 'taskDefinition' > td.json
@@ -53,6 +56,6 @@ jobs:
       - name: Update service
         run: |
           aws ecs update-service \
-            --cluster "${{ vars.PROJECT_NAME }}-cluster" \
-            --service "${{ vars.PROJECT_NAME }}-s3-svc" \
+            --cluster "${{ secrets.PROJECT_NAME }}-cluster" \
+            --service "${{ secrets.PROJECT_NAME }}-sqs-svc" \
             --task-definition "${{ steps.taskdef.outputs.TD_ARN }}"

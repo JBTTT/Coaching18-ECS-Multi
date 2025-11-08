@@ -1,58 +1,74 @@
 name: Build & Deploy S3 Service
+
 on:
   push:
-    paths:
-      - 'service-s3/**'
-      - '.github/workflows/build-and-deploy-s3.yml'
     branches: [ main ]
+    paths:
+      - 'flask-s3-service/**'
+      - '.github/workflows/deploy-flask-s3.yaml'
+      
   pull_request:
-    paths: [ 'service-s3/**' ]
+    paths:
+      - 'flask-s3-service/**'
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
-    permissions: { id-token: write, contents: read }
-    steps:
-      - uses: actions/checkout@v4
+    permissions:
+      contents: read
 
-      - name: Configure AWS
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS (access keys)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_APPS }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, push
+      - name: Build, tag, and push image
         env:
-          ECR_REPO: ${{ vars.ECR_SVC1 }}
+          ECR_REPO: ${{ secrets.ECR_SVC1 }}
         run: |
-          IMAGE="${ECR_REPO}:$(git rev-parse --short HEAD)"
-          docker build -t "$IMAGE" service-s3
-          docker push "$IMAGE"
-          # also tag latest (optional)
-          docker tag "$IMAGE" "${ECR_REPO}:latest"
-          docker push "${ECR_REPO}:latest"
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          docker build -t "$ECR_REPO:$IMAGE_TAG" flask-s3-service
+          docker push "$ECR_REPO:$IMAGE_TAG"
+          docker tag "$ECR_REPO:$IMAGE_TAG" "$ECR_REPO:latest"
+          docker push "$ECR_REPO:latest"
 
-      - name: Register new task def (swap image)
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Register new task definition (swap image)
         id: taskdef
+        env:
+          FAMILY: "group1-app-svc1"
+          ECR_REPO: ${{ secrets.ECR_SVC1 }}
         run: |
-          FAMILY="${{ vars.PROJECT_NAME }}-s3"
-          IMAGE="${{ vars.ECR_SVC1 }}:$(git rev-parse --short HEAD)"
-          # pull current task def JSON, replace image, register new revision
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          IMAGE="${ECR_REPO}:${IMAGE_TAG}"
+
           aws ecs describe-task-definition --task-definition "$FAMILY" \
             --query 'taskDefinition' > td.json
-          cat td.json | \
-            jq '.containerDefinitions[0].image = "'$IMAGE'" | del(.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy,.taskDefinitionArn)' \
+
+          cat td.json | jq \
+            '.containerDefinitions[0].image = "'$IMAGE'" 
+            | del(.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy,.taskDefinitionArn)' \
             > new-td.json
+
           aws ecs register-task-definition --cli-input-json file://new-td.json \
             --query 'taskDefinition.taskDefinitionArn' --output text > td_arn.txt
-          echo "TD_ARN=$(cat td_arn.txt)" >> $GITHUB_OUTPUT
 
-      - name: Update service
+          echo "TD_ARN=$(cat td_arn.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Update ECS service
         run: |
           aws ecs update-service \
-            --cluster "${{ vars.PROJECT_NAME }}-cluster" \
-            --service "${{ vars.PROJECT_NAME }}-s3-svc" \
+            --cluster "${{ secrets.PROJECT_NAME }}-cluster" \
+            --service "${{ secrets.PROJECT_NAME }}-s3-svc" \
             --task-definition "${{ steps.taskdef.outputs.TD_ARN }}"
