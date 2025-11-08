@@ -69,6 +69,6 @@ jobs:
       - name: Update ECS service
         run: |
           aws ecs update-service \
-            --cluster "${{ secrets.PROJECT_NAME }}-cluster" \
-            --service "${{ secrets.PROJECT_NAME }}-s3-svc" \
+            --cluster "group1-app-cluster" \
+            --service "group1-app-svc1" \
             --task-definition "${{ steps.taskdef.outputs.TD_ARN }}"
