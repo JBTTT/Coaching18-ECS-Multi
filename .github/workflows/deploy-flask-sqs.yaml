@@ -5,11 +5,15 @@ on:
       - 'flask-sqs-service/**'
       - '.github/workflows/deploy-flask-sqs.yaml'
     branches: [ main ]
+    
   pull_request:
-    paths: [ 'flask-sqs-service/**' ]
+    branches: [ main ]
+    paths:
+      - 'flask-sqs-service/**'
+      - '.github/workflows/deploy-flask-sqs.yaml'
 
 jobs:
-  build-deploy:
+  build-deploy2:
     runs-on: ubuntu-latest
     permissions: { id-token: write, contents: read }
     steps:
@@ -56,6 +60,6 @@ jobs:
       - name: Update service
         run: |
           aws ecs update-service \
-            --cluster "${{ secrets.PROJECT_NAME }}-cluster" \
-            --service "${{ secrets.PROJECT_NAME }}-sqs-svc" \
+            --cluster "group1-app-cluster" \
+            --service "group1-app-svc2" \
             --task-definition "${{ steps.taskdef.outputs.TD_ARN }}"
