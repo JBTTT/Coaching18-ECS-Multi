@@ -47,7 +47,7 @@ jobs:
       - name: Register new task definition (swap image)
         id: taskdef
         env:
-          FAMILY: ${{ secrets.PROJECT_NAME }}-s3
+          FAMILY: "group1-app-svc1"
           ECR_REPO: ${{ secrets.ECR_SVC1 }}
         run: |
           IMAGE_TAG=$(git rev-parse --short HEAD)

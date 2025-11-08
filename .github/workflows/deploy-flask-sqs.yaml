@@ -41,7 +41,7 @@ jobs:
       - name: Register new task def (swap image)
         id: taskdef
         run: |
-          FAMILY="${{ secrets.PROJECT_NAME }}-sqs"
+          FAMILY="group1-app-svc2"
           IMAGE="${{ secrets.ecr_svc2 }}:$(git rev-parse --short HEAD)"
           # pull current task def JSON, replace image, register new revision
           aws ecs describe-task-definition --task-definition "$FAMILY" \
