@@ -30,7 +30,7 @@ jobs:
 
         run: |
           IMAGE="${ECR_REPO}:$(git rev-parse --short HEAD)"
-          docker build -t "$IMAGE" service-s3
+          docker build -t "$IMAGE" flask-sqs-service
           docker push "$IMAGE"
           # also tag latest (optional)
           docker tag "$IMAGE" "${ECR_REPO}:latest"
@@ -39,7 +39,7 @@ jobs:
       - name: Register new task def (swap image)
         id: taskdef
         run: |
-          FAMILY="${{ secrets.PROJECT_NAME }}-s3"
+          FAMILY="${{ secrets.PROJECT_NAME }}-sqs"
           IMAGE="${{ secrets.ecr_svc2 }}:$(git rev-parse --short HEAD)"
           # pull current task def JSON, replace image, register new revision
           aws ecs describe-task-definition --task-definition "$FAMILY" \

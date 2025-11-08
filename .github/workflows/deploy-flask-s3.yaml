@@ -36,7 +36,7 @@ jobs:
           ECR_REPO: ${{ secrets.ECR_SVC1 }}
         run: |
           IMAGE_TAG=$(git rev-parse --short HEAD)
-          docker build -t "$ECR_REPO:$IMAGE_TAG" service-s3
+          docker build -t "$ECR_REPO:$IMAGE_TAG" flask-s3-service
           docker push "$ECR_REPO:$IMAGE_TAG"
           docker tag "$ECR_REPO:$IMAGE_TAG" "$ECR_REPO:latest"
           docker push "$ECR_REPO:latest"
