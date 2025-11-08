@@ -27,6 +27,7 @@ jobs:
       - name: Build, tag, push
         env:
           ECR_REPO: ${{ secrets.ecr_svc2 }}
+
         run: |
           IMAGE="${ECR_REPO}:$(git rev-parse --short HEAD)"
           docker build -t "$IMAGE" service-s3
